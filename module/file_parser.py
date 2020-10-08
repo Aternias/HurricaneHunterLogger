@@ -27,7 +27,7 @@ def parse():
             print("(Date): " + "{}-{}-{}".format(date[4:6], date[6:8], date[0:4]))
             print("")
 
-        elif count != 0 and count != 1:
+        elif count != 0 and count != 1 and "$" not in line and ";" not in line:
 
             # Time
             line_data = line.split(sep2)
@@ -39,7 +39,7 @@ def parse():
             hour_2_new = int(hour_2) - 2
             obs_time_ref_est = "{}{}:{}:{}".format(hour_1_new, hour_2_new, obs_time[2:4], obs_time[4:6])
             __main__.time_past.append(int(obs_time))
-            print('(Time): ' + obs_time_ref_est)
+            print('(Time): ' + obs_time_ref_est + ' EST')
 
             # Aircraft Height (Feet)
             obs_height = line_data[4]
@@ -62,7 +62,7 @@ def parse():
             # Flight Level Wind 10s-average (mph)
             __main__.obs_fl_wind = line_data[9]
             __main__.fl_wind = __main__.np.append(__main__.fl_wind, int(__main__.obs_fl_wind))
-            __main__.fl_wind = __main__.fl_wind.astype(int)
+            __main__.fl_wind = (__main__.fl_wind * 1.15078).astype(int)
             print('(Flight Level Wind): ' + __main__.obs_fl_wind + ' Mph')
 
             print('')
