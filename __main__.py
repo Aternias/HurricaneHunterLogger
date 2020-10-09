@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from module.file_parser import parse
 from selenium import webdriver
+import module.file_parser as file_parser
+import datetime
 
 global driver
 driver = webdriver.Chrome()
@@ -13,13 +14,17 @@ driver = webdriver.Chrome()
 def getRecon(driver):
     driver.delete_all_cookies()
     driver.get('https://www.nhc.noaa.gov/text')
-    usaf_aircraft_1 = 'URNT15-USAF.shtml'  # <-- AF309 Aircraft 1
-    noaa_aircraft_1 = 'URNT15-NOAA.shtml'  # <-- NOAA9 Aircraft 1
+    # URNT15-USAF.shtml <-- AF309 Aircraft 1
+    # URNT15-NOAA.shtml <-- NOAA9 Aircraft 1
+    # MIAREPNT1.shtml <-- RECCO OBSERVATIONS
+    # MIAREPNT2.shtml <-- CENTER CIRCULATION DATA
+    # MIAREPNT3.shtml <-- DROPSONDE DATA
+
     pathDate = '/html/body/table/tbody/tr[{}]/td[{}]'
 
     # Checking For File With Valid Name And Soonest Last Modified Date. (ONLY GETS 1 ELEMENT AS OF NOW)
     row_count = driver.execute_script("return document.getElementsByTagName('tr').length") - 4
-    validAircraft = [usaf_aircraft_1] # [usaf_aircraft_1, noaa_aircraft_1]
+    validAircraft = ['URNT15-USAF.shtml'] # [usaf_aircraft_1, noaa_aircraft_1]
     logElementPosition = []
     logElementTime = []
     logElementName = []
@@ -48,10 +53,6 @@ def getRecon(driver):
     f.write(getFlightLog)
     f.close()
 
-    # open and read the file after the appending:
-    f = open("dataBuffer.txt", "r")
-    print(f.readline(1))
-
 
 global time_past
 time_past = []
@@ -62,51 +63,55 @@ sfc_pressure_range = []
 global sfc_pressure_intervals
 sfc_pressure_intervals = []
 global fl_wind
-fl_wind = np.array([])
+fl_wind = []
 global lineLex
-lineLex = ''
-global getLogTime
+global buffer
+buffer = []
 
 
 def main():
     global driver
     global lineLex
+    global buffer
     global sfc_pressure_range
     global sfc_pressure_intervals
+    global fl_wind
     # driver = webdriver.Chrome()  # Optional argument, if not specified will search path.
     #driver.minimize_window()
     getRecon(driver)
     # driver.quit()
 
     f = open("dataBuffer.txt", "r")
-    print(f.readline(0))
-    lineLex = f.readlines()
+    buffer = f.readlines()
+    f.close()
 
-    count = 0
-
-    parse()
-
-    sfc_pressure_range = sfc_pressure_intervals
-    sfc_pressure_intervals = max(sfc_pressure_intervals) - min(sfc_pressure_intervals)
+    file_parser.appendLogs(False)
+    file_parser.loadLogs()
+    # sfc_pressure_range = sfc_pressure_intervals
+    # sfc_pressure_intervals = max(sfc_pressure_intervals) - min(sfc_pressure_intervals)
 
     # y_1 == Wind Data
     # x_1 == Time Data
     # x_2 == Pressure Data
 
     # Evenly spaced horizontal time intervals.
-    obs_time_rg = (max(time_past) - min(time_past)) / 48.5
-    x_1_bounds = np.linspace(min(time_past), max(time_past), dtype=int)
+    # obs_time_rg = (max(time_past) - min(time_past)) / 48.5
+    # x_1_bounds = np.linspace(min(time_past), max(time_past), dtype=int)
     # print(x_1)
     # Evenly spaced vertical intervals from minimum surface pressure to maximum surface pressure
-    sfcp_bounds = np.linspace(min(sfc_pressure_range), max(sfc_pressure_range), num=int(sfc_pressure_intervals) + 2,
-                              dtype=int)
-    fl_wind_rg = np.amax(fl_wind) - np.amin(fl_wind) + 1
-    flw_bounds = np.linspace(min(fl_wind), max(fl_wind), num=fl_wind_rg, dtype=int)
-    print(fl_wind)
+    # sfcp_bounds = np.linspace(min(sfc_pressure_range), max(sfc_pressure_range), num=int(sfc_pressure_intervals) + 2, dtype=int)
+    # fl_wind_rg = np.amax(fl_wind) - np.amin(fl_wind) + 1
+    # flw_bounds = np.linspace(min(fl_wind), max(fl_wind), num=fl_wind_rg, dtype=int)
+    # print(fl_wind)
 
     plt.plot(time_past, fl_wind)
     plt.axis([min(time_past), max(time_past), min(fl_wind), max(fl_wind)])
     plt.ylabel('Flight Lvl-wind 10s')
+    newXtick = []
+    for idx, val in enumerate(time_past):
+        if idx % 5 == 0:
+            newXtick.append(val)
+    plt.xticks(newXtick)
     plt.xlabel('Time')
     plt.show()
 
